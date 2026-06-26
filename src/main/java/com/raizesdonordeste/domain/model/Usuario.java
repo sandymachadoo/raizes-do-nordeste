@@ -2,11 +2,9 @@ package com.raizesdonordeste.domain.model;
 
 import com.raizesdonordeste.domain.enums.Role;
 import jakarta.persistence.*;
-import jakarta.validation.constraints.Email;
-import jakarta.validation.constraints.NotBlank;
-import jakarta.validation.constraints.NotNull;
-import jakarta.validation.constraints.Size;
 import lombok.*;
+
+import java.time.LocalDateTime;
 
 @Entity
 @Table(name = "usuarios")
@@ -21,25 +19,26 @@ public class Usuario {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @NotBlank(message = "Nome é obrigatório")
+    @Column(nullable = false)
     private String nome;
 
-    @NotBlank(message = "E-mail é obrigatório")
-    @Email(message = "E-mail inválido")
     @Column(nullable = false, unique = true)
     private String email;
 
-    @NotBlank(message = "Senha é obrigatória")
-    private String senha;
+    @Column(name = "senha_hash", nullable = false)
+    private String senhaHash;
 
-    @Size(max = 20, message = "Telefone deve ter no máximo 20 caracteres")
     private String telefone;
 
-    @NotNull(message = "Perfil é obrigatório")
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
     private Role role;
 
     @Builder.Default
     private Boolean ativo = true;
+
+    @Builder.Default
+    private Boolean consentimentoLgpd = false;
+
+    private LocalDateTime dataConsentimentoLgpd;
 }

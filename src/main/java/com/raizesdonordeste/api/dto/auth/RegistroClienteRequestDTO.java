@@ -1,20 +1,15 @@
-package com.raizesdonordeste.api.dto.usuario;
+package com.raizesdonordeste.api.dto.auth;
 
-import com.raizesdonordeste.domain.enums.Role;
+import jakarta.validation.constraints.AssertTrue;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
-import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
-import lombok.*;
-
-import java.time.LocalDateTime;
+import lombok.Getter;
+import lombok.Setter;
 
 @Getter
 @Setter
-@NoArgsConstructor
-@AllArgsConstructor
-@Builder
-public class UsuarioRequestDTO {
+public class RegistroClienteRequestDTO {
 
     @NotBlank(message = "Nome é obrigatório")
     private String nome;
@@ -30,6 +25,6 @@ public class UsuarioRequestDTO {
     @Size(max = 20)
     private String telefone;
 
-    @NotNull(message = "Perfil é obrigatório")
-    private Role role;
+    @AssertTrue(message = "Consentimento LGPD é obrigatório")
+    private Boolean consentimentoLgpd;
 }
