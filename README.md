@@ -163,7 +163,9 @@ PATCH /pedidos/{id}/status       → EM_PREPARO → PRONTO → ENTREGUE
 - **Auditoria:** login, pedidos, estoque, pagamentos e resgates relevantes são registrados; consulta em `GET /auditoria` (ADMIN).
 - **Multicanalidade:** pedidos exigem `canalPedido` (`APP`, `TOTEM`, `BALCAO`, `PICKUP`, `WEB`) e podem ser filtrados por `?canalPedido=`.
 - **Cancelamento:** `POST /pedidos/{id}/cancelar` — cliente cancela apenas em `AGUARDANDO_PAGAMENTO`; equipe (atendente/gerente/admin) também em `PAGO` e `EM_PREPARO`, com estorno de estoque e pontos quando aplicável.
-- **Desempenho:** virtual threads habilitadas (`spring.threads.virtual.enabled=true`) para operações de I/O.
+- **Desempenho:** virtual threads habilitadas (`spring.threads.virtual.enabled=true`) + script k6 em `scripts/k6-load-test.js`.
+- **Disponibilidade:** Spring Actuator com `/actuator/health`, liveness e readiness (MySQL).
+- **Tolerância a falhas (pagamento):** gateway mock desacoplado com retry e circuit breaker (Resilience4j); callback idempotente.
 
 ---
 
@@ -237,15 +239,18 @@ O projeto inclui teste de contexto Spring Boot. Os testes de integração depend
 | Coleção Postman | `raizes-postman-collection.json` |
 | Plano de testes | `PLANO_DE_TESTES.md` |
 | Promoções (conceitual) | `docs/PROMOCOES_CAMPANHAS.md` |
+| RNFs (desempenho/disponibilidade) | `docs/RNF_IMPLEMENTACAO.md` |
+| Teste de carga k6 | `scripts/k6-load-test.js` |
 
 ---
 
 ## Limitações atuais
 
-- Pagamento externo é **mock interno**, sem integração real.
+- Pagamento externo é **mock interno**, sem integração real com adquirente.
 - Não há paginação nas listagens (`page`/`limit`).
 - Migrations versionadas (Flyway/Liquibase) não foram adotadas; schema via Hibernate `update`.
 - Promoções e campanhas: documentação conceitual em `docs/PROMOCOES_CAMPANHAS.md` (sem implementação no MVP).
+- Alta disponibilidade multi-instância não configurada (deploy single-node).
 
 ---
 

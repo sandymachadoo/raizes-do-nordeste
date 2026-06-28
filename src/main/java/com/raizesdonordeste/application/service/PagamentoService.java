@@ -10,6 +10,7 @@ import com.raizesdonordeste.domain.model.ItemPedido;
 import com.raizesdonordeste.domain.model.Pagamento;
 import com.raizesdonordeste.domain.model.Pedido;
 import com.raizesdonordeste.infrastructure.repository.PagamentoRepository;
+import com.raizesdonordeste.infrastructure.payment.PagamentoGatewayMockClient;
 import com.raizesdonordeste.infrastructure.security.SecurityUtils;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -27,6 +28,7 @@ public class PagamentoService {
     private final EstoqueService estoqueService;
     private final FidelidadeService fidelidadeService;
     private final AuditoriaService auditoriaService;
+    private final PagamentoGatewayMockClient pagamentoGatewayMockClient;
 
     @Transactional
     public PagamentoResponseDTO solicitarPagamento(Long pedidoId) {
@@ -46,6 +48,8 @@ public class PagamentoService {
                 .status(StatusPagamento.PENDENTE)
                 .formaPagamento(FormaPagamento.MOCK)
                 .build();
+
+        pagamentoGatewayMockClient.enviarSolicitacao(pedido, pagamento.getTransactionId());
 
         Pagamento salvo = pagamentoRepository.save(pagamento);
 

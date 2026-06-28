@@ -139,6 +139,32 @@ Teste de contexto Spring Boot (`RaizesDoNordesteApplicationTests`) valida subida
 
 ---
 
-## 7. RNF — Desempenho (referência)
+## 7. RNF — Desempenho e disponibilidade
 
-Virtual threads habilitadas (`spring.threads.virtual.enabled=true`). Teste de carga manual opcional com ferramenta externa (k6, JMeter) em cenário de listagem de pedidos e criação concorrente.
+Virtual threads habilitadas (`spring.threads.virtual.enabled=true`).
+
+### CT-12 — Health checks (disponibilidade)
+
+| Passo | Ação | Resultado esperado |
+|---|---|---|
+| 1 | `GET /actuator/health` | HTTP 200, `"status": "UP"` |
+| 2 | `GET /actuator/health/readiness` | HTTP 200 quando MySQL ativo |
+| 3 | `GET /actuator/health/liveness` | HTTP 200 |
+
+### CT-13 — Tolerância a falhas no pagamento
+
+| Passo | Ação | Resultado esperado |
+|---|---|---|
+| 1 | Solicitar pagamento (modo normal) | HTTP 200, `transactionId` gerado |
+| 2 | Callback duplicado APROVADO | HTTP 400 (idempotente) |
+| 3 | Com `pagamento.gateway.simular-falha-transitoria=true` | Retry interno; sucesso na 3ª tentativa |
+
+### CT-14 — Teste de carga (k6)
+
+```bash
+k6 run scripts/k6-load-test.js
+```
+
+Critérios: falha < 5%, p95 < 800 ms (endpoints públicos).
+
+Detalhes em `docs/RNF_IMPLEMENTACAO.md`.
