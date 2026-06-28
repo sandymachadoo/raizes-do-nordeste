@@ -33,6 +33,8 @@ Validar requisitos funcionais (RF), regras de negócio, segurança por perfil, m
 
 ### CT-01 — Registro de cliente (RF01 / LGPD)
 
+Ver política completa em `docs/LGPD.md`.
+
 | Passo | Ação | Resultado esperado |
 |---|---|---|
 | 1 | `POST /auth/registro` com `consentimentoLgpd: true` | HTTP 201, usuário CLIENTE |

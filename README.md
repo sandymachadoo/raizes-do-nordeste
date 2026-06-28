@@ -159,7 +159,7 @@ PATCH /pedidos/{id}/status       → EM_PREPARO → PRONTO → ENTREGUE
 - **Pagamento desacoplado:** `PagamentoService` simula o gateway externo com `transactionId` e callback, permitindo testar aprovação e recusa sem provedor real.
 - **Estoque:** na criação do pedido há apenas validação de disponibilidade; a baixa ocorre somente após callback **APROVADO**.
 - **Segurança:** JWT stateless + `@PreAuthorize` por perfil (`ADMIN`, `GERENTE`, `ATENDENTE`, `COZINHA`, `CLIENTE`).
-- **LGPD:** registro de cliente exige `consentimentoLgpd` e persiste `dataConsentimentoLgpd`.
+- **LGPD:** registro de cliente exige `consentimentoLgpd` e persiste `dataConsentimentoLgpd`. Documentação completa em `docs/LGPD.md`.
 - **Auditoria:** login, pedidos, estoque, pagamentos e resgates relevantes são registrados; consulta em `GET /auditoria` (ADMIN).
 - **Multicanalidade:** pedidos exigem `canalPedido` (`APP`, `TOTEM`, `BALCAO`, `PICKUP`, `WEB`) e podem ser filtrados por `?canalPedido=`.
 - **Cancelamento:** `POST /pedidos/{id}/cancelar` — cliente cancela apenas em `AGUARDANDO_PAGAMENTO`; equipe (atendente/gerente/admin) também em `PAGO` e `EM_PREPARO`, com estorno de estoque e pontos quando aplicável.
@@ -240,6 +240,8 @@ O projeto inclui teste de contexto Spring Boot. Os testes de integração depend
 | Plano de testes | `PLANO_DE_TESTES.md` |
 | Promoções (conceitual) | `docs/PROMOCOES_CAMPANHAS.md` |
 | RNFs (desempenho/disponibilidade) | `docs/RNF_IMPLEMENTACAO.md` |
+| Documentação por endpoint (5.3) | `docs/API_ENDPOINTS.md` |
+| LGPD (dados, consentimento, controles) | `docs/LGPD.md` |
 | Teste de carga k6 | `scripts/k6-load-test.js` |
 
 ---
