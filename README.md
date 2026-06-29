@@ -1,95 +1,146 @@
 # Raízes do Nordeste — Back-end API
 
-Solução REST para o estudo de caso da franquia **Raízes do Nordeste**. A aplicação centraliza operações de unidades, cardápio, estoque local, pedidos com origem multicanal, pagamento simulado, programa de fidelidade e trilha de auditoria, com autenticação JWT e perfis de acesso.
+Solução REST para o estudo de caso da franquia **Raízes do Nordeste**. A aplicação centraliza operações de unidades, cardápio, estoque local, pedidos multicanal, pagamento simulado, programa de fidelidade e trilha de auditoria, com autenticação JWT e perfis de acesso.
 
 ---
 
-## Requisitos
+## Evidências (entrega técnica)
 
-- **Java 21**
-- **Maven 3.9+**
-- **MySQL 8+** (porta padrão `3306`)
+| Item | Link / localização |
+|---|---|
+| **Repositório GitHub** | https://github.com/sandymachadoo/raizes-do-nordeste |
+| **Swagger (local)** | http://localhost:8080/swagger-ui.html |
+| **OpenAPI JSON (local)** | http://localhost:8080/v3/api-docs |
+| **Coleção Postman** | [`raizes-postman-collection.json`](raizes-postman-collection.json) |
+| **DER (PlantUML)** | [`docs/der.puml`](docs/der.puml) — exportar PNG/PDF para entrega |
+| **Deploy público** | Não aplicável (execução local — ver [Quick start](#quick-start-passo-a-passo)) |
+
+**Exportar o DER:** abra `docs/der.puml` no IntelliJ/VS Code (plugin PlantUML) ou em [plantuml.com](https://www.plantuml.com/plantuml) e exporte PNG/PDF.
+
+### Como o avaliador acessa
+
+1. Clone o repositório público: `git clone https://github.com/sandymachadoo/raizes-do-nordeste.git`
+2. Configure MySQL e variáveis ([seção c](#c-variáveis-de-ambiente)).
+3. Execute `mvnw.cmd spring-boot:run` ([seção f](#f-iniciar-a-api)).
+4. Abra o Swagger: http://localhost:8080/swagger-ui.html
+5. Importe no Postman: arquivo `raizes-postman-collection.json` (raiz do projeto).
+
+> O Swagger roda **localmente** após subir a API. Não há deploy em nuvem neste MVP.
 
 ---
 
-## Configuração
+## Quick start (passo a passo)
 
-Copie o arquivo de exemplo e ajuste conforme seu ambiente:
+1. Instale os [requisitos](#b-requisitos) (Java 21, Maven, MySQL 8).
+2. Crie o banco `raizes_db` ou deixe a URL JDBC criar automaticamente ([seção e](#e-banco-de-dados-migrations-e-seed)).
+3. Copie e ajuste variáveis: `cp .env.example .env` ([seção c](#c-variáveis-de-ambiente)).
+4. Instale dependências: `mvnw.cmd clean install` ([seção d](#d-instalar-dependências)).
+5. Inicie a API: `mvnw.cmd spring-boot:run` ([seção f](#f-iniciar-a-api)).
+6. Acesse a documentação: [Swagger](#g-documentação-swaggeropenapi).
+7. Execute os testes: [seção h](#h-testes).
+
+Base URL local: `http://localhost:8080`
+
+---
+
+## b) Requisitos
+
+### Linguagem e runtime
+
+| Item | Versão |
+|---|---|
+| **Java** | 21 |
+| **Maven** | 3.9+ (wrapper incluso: `mvnw` / `mvnw.cmd`) |
+| **MySQL** | 8+ (porta padrão `3306`) |
+
+### Banco de dados
+
+- MySQL 8+ com banco `raizes_db` (pode ser criado automaticamente pela URL JDBC).
+- Usuário/senha configuráveis (padrão local: `root` / `root`).
+
+### Dependências principais (Maven)
+
+Gerenciadas automaticamente pelo `pom.xml`:
+
+| Dependência | Uso |
+|---|---|
+| Spring Boot 3.5 Web | API REST |
+| Spring Data JPA | Persistência ORM |
+| Spring Security + JWT | Autenticação e autorização |
+| MySQL Connector | Driver JDBC |
+| Spring Validation | Validação de DTOs |
+| Springdoc OpenAPI | Swagger / OpenAPI |
+| Spring Actuator | Health checks (disponibilidade) |
+| Resilience4j | Retry e circuit breaker (pagamento mock) |
+| Lombok | Redução de boilerplate |
+
+---
+
+## c) Variáveis de ambiente
+
+### Arquivo `.env.example`
+
+Na raiz do projeto há um modelo com todas as variáveis:
 
 ```bash
 cp .env.example .env
 ```
 
-Variáveis de referência:
+Edite `.env` com seus valores locais. **Não commite o arquivo `.env`** (está no `.gitignore`).
 
 | Variável | Descrição |
 |---|---|
 | `SPRING_DATASOURCE_URL` | URL JDBC do MySQL |
 | `SPRING_DATASOURCE_USERNAME` | Usuário do banco |
 | `SPRING_DATASOURCE_PASSWORD` | Senha do banco |
-| `JWT_SECRET` | Chave secreta do token (mínimo 32 caracteres) |
-| `JWT_EXPIRATION_MS` | Tempo de expiração do JWT em milissegundos |
+| `JWT_SECRET` | Chave secreta do JWT (mínimo 32 caracteres) |
+| `JWT_EXPIRATION_MS` | Expiração do token em milissegundos |
+| `SERVER_PORT` | Porta da API (padrão `8080`) |
 
-Na prática, os valores também podem ser definidos em `src/main/resources/application.properties`. A API sobe localmente com os padrões do projeto, desde que o MySQL esteja ativo.
+### Como a aplicação lê as variáveis
 
-Exemplo mínimo no `application.properties`:
+O `application.properties` usa placeholders com fallback:
 
 ```properties
-spring.datasource.url=jdbc:mysql://localhost:3306/raizes_db?createDatabaseIfNotExist=true&serverTimezone=America/Sao_Paulo
-spring.datasource.username=root
-spring.datasource.password=root
-
-jwt.secret=sua-chave-secreta-com-pelo-menos-32-caracteres
-jwt.expiration-ms=86400000
+spring.datasource.url=${SPRING_DATASOURCE_URL:jdbc:mysql://localhost:3306/raizes_db?...}
+spring.datasource.username=${SPRING_DATASOURCE_USERNAME:root}
+spring.datasource.password=${SPRING_DATASOURCE_PASSWORD:root}
+jwt.secret=${JWT_SECRET:raizes-do-nordeste-jwt-secret-key-minimo-32-chars}
+jwt.expiration-ms=${JWT_EXPIRATION_MS:86400000}
+server.port=${SERVER_PORT:8080}
 ```
+
+Você pode configurar via:
+
+- variáveis de ambiente do sistema/terminal,
+- arquivo `.env` (com plugin do IDE ou export manual),
+- ou edição direta de `src/main/resources/application.properties`.
 
 ---
 
-## Execução
+## d) Instalar dependências
+
+Na raiz do projeto:
 
 ```bash
+# Windows
 mvnw.cmd clean install
-mvnw.cmd spring-boot:run
+
+# Linux / macOS
+./mvnw clean install
 ```
 
-> Em Linux/macOS, use `./mvnw` no lugar de `mvnw.cmd`.
-
-Base URL local:
-
-```
-http://localhost:8080
-```
+O Maven baixa todas as dependências do `pom.xml` e compila o projeto. É necessário internet na primeira execução.
 
 ---
 
-## Swagger
+## e) Banco de dados, migrations e seed
 
-Documentação interativa:
+### Criar o banco
 
-```
-http://localhost:8080/swagger-ui.html
-```
+**Opção A — automática:** a URL JDBC inclui `createDatabaseIfNotExist=true`.
 
-**Como autenticar no Swagger**
-
-1. Execute `POST /auth/login` ou registre um cliente em `POST /auth/registro`.
-2. Copie o campo `token` da resposta.
-3. Clique em **Authorize**.
-4. Informe: `Bearer {token}`.
-
-Contrato OpenAPI em JSON:
-
-```
-http://localhost:8080/v3/api-docs
-```
-
----
-
-## Banco de dados
-
-O schema é gerenciado pelo Hibernate com `spring.jpa.hibernate.ddl-auto=update`. Na primeira execução, as tabelas são criadas automaticamente se o banco existir ou puder ser criado pela URL JDBC.
-
-Criação manual opcional:
+**Opção B — manual (MySQL Workbench ou CLI):**
 
 ```sql
 CREATE DATABASE IF NOT EXISTS raizes_db
@@ -97,24 +148,137 @@ CREATE DATABASE IF NOT EXISTS raizes_db
   COLLATE utf8mb4_unicode_ci;
 ```
 
-### Dados iniciais
+### Migrations (schema)
 
-Este repositório **não possui seed automático**. Para validar o fluxo principal, cadastre os registros abaixo (via Swagger ou Postman):
+Este projeto **não utiliza Flyway/Liquibase**. O schema é gerenciado pelo **Hibernate**:
 
-| Ordem | Ação | Observação |
+```properties
+spring.jpa.hibernate.ddl-auto=update
+```
+
+Na **primeira execução** da API, as tabelas são criadas/atualizadas automaticamente (`usuarios`, `pedidos`, `produtos`, etc.).
+
+### Seed (dados iniciais)
+
+**Não há seed automático** no repositório. Para demonstrar o fluxo:
+
+**1. Usuário ADMIN (MySQL — uma vez):**
+
+```sql
+INSERT INTO usuarios (nome, email, senha_hash, role, ativo, consentimento_lgpd, data_consentimento_lgpd)
+VALUES (
+  'Administrador',
+  'admin@raizes.com',
+  '$2a$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi',
+  'ADMIN',
+  true,
+  true,
+  NOW()
+);
+```
+
+Senha: `password`
+
+**2. Demais dados (Postman ou Swagger):**
+
+| Ordem | Endpoint | Observação |
 |---|---|---|
-| 1 | `POST /auth/registro` | Cliente com consentimento LGPD |
+| 1 | `POST /auth/registro` | Cliente com `consentimentoLgpd: true` |
 | 2 | `POST /auth/login` | Obter JWT |
-| 3 | `POST /usuarios` | Criar perfil ADMIN (requer usuário admin pré-existente ou insert manual) |
-| 4 | `POST /unidades` | Cadastrar loja |
-| 5 | `POST /produtos` | Cadastrar itens do cardápio |
-| 6 | `POST /estoque/entrada` | Informar quantidade na unidade |
+| 3 | `POST /unidades` | Requer token ADMIN |
+| 4 | `POST /produtos` | ADMIN ou GERENTE |
+| 5 | `POST /estoque/entrada` | Quantidade na unidade |
+| 6 | `POST /pedidos` | Cliente; `canalPedido` obrigatório |
+
+Coleção Postman: `raizes-postman-collection.json`
+
+---
+
+## f) Iniciar a API
+
+```bash
+# Windows
+mvnw.cmd spring-boot:run
+
+# Linux / macOS
+./mvnw spring-boot:run
+```
+
+Aguarde no console: `Started RaizesDoNordesteApplication`.
+
+Verifique:
+
+```text
+GET http://localhost:8080/actuator/health   → {"status":"UP"}
+GET http://localhost:8080/unidades          → [] ou lista de unidades
+```
+
+> **Porta em uso:** altere `SERVER_PORT` no `.env` ou pare a instância anterior.
+
+---
+
+## g) Documentação (Swagger / OpenAPI)
+
+| Recurso | URL |
+|---|---|
+| Swagger UI | http://localhost:8080/swagger-ui.html |
+| OpenAPI JSON | http://localhost:8080/v3/api-docs |
+| Health | http://localhost:8080/actuator/health |
+
+### Autenticar no Swagger
+
+1. `POST /auth/login` ou `POST /auth/registro`
+2. Copie o campo `token` da resposta
+3. Clique em **Authorize**
+4. Informe: `Bearer {token}`
+
+### Documentação complementar (TCC)
+
+| Documento | Conteúdo |
+|---|---|
+| `docs/API_ENDPOINTS.md` | Checklist por endpoint (roteiro 5.3) |
+| `docs/LGPD.md` | Dados pessoais, consentimento, controles |
+| `docs/RNF_IMPLEMENTACAO.md` | Desempenho, disponibilidade, resiliência |
+| `docs/PROMOCOES_CAMPANHAS.md` | Promoções (conceitual) |
+| `PLANO_DE_TESTES.md` | Casos de teste |
+
+---
+
+## h) Testes
+
+### Testes automatizados (Maven)
+
+```bash
+# Windows
+mvnw.cmd test
+
+# Linux / macOS
+./mvnw test
+```
+
+Inclui teste de contexto Spring Boot e teste de integração do Actuator (`ActuatorHealthIntegrationTest`). Requer **MySQL acessível** com as credenciais configuradas.
+
+### Testes manuais (Postman)
+
+Importe `raizes-postman-collection.json` e siga o fluxo em `PLANO_DE_TESTES.md`.
+
+### Teste de carga (k6 — opcional)
+
+Pré-requisito: [k6 instalado](https://k6.io/docs/get-started/installation/)
+
+```bash
+k6 run scripts/k6-load-test.js
+```
+
+Com URL customizada:
+
+```bash
+k6 run -e BASE_URL=http://localhost:8080 scripts/k6-load-test.js
+```
 
 ---
 
 ## Fluxo principal (MVP)
-
-Sequência recomendada para demonstração ponta a ponta:
 
 ```
 POST /auth/registro
@@ -123,25 +287,22 @@ POST /unidades
 POST /produtos
 POST /estoque/entrada
 POST /pedidos                    → canalPedido obrigatório
-POST /pedidos/{id}/cancelar      → cancelamento explícito (cliente ou equipe)
 POST /pagamentos/solicitar/{id}
-POST /pagamentos/callback        → status APROVADO ou NEGADO
+POST /pagamentos/callback        → APROVADO ou NEGADO
 PATCH /pedidos/{id}/status       → EM_PREPARO → PRONTO → ENTREGUE
 ```
 
-**Exemplo de pedido**
+**Exemplo de pedido:**
 
 ```json
 {
   "unidadeId": 1,
   "canalPedido": "WEB",
-  "itens": [
-    { "produtoId": 1, "quantidade": 1 }
-  ]
+  "itens": [{ "produtoId": 1, "quantidade": 1 }]
 }
 ```
 
-**Exemplo de callback mock**
+**Exemplo de callback mock:**
 
 ```json
 {
@@ -152,45 +313,7 @@ PATCH /pedidos/{id}/status       → EM_PREPARO → PRONTO → ENTREGUE
 
 ---
 
-## Notas sobre a implementação
-
-- **MySQL + JPA:** o modelo relacional favorece integridade entre unidade, estoque, pedido, itens e pagamento, alinhado ao controle operacional da rede.
-- **DTOs na borda da API:** entidades não são expostas diretamente; campos sensíveis como `senhaHash` permanecem fora das respostas.
-- **Pagamento desacoplado:** `PagamentoService` simula o gateway externo com `transactionId` e callback, permitindo testar aprovação e recusa sem provedor real.
-- **Estoque:** na criação do pedido há apenas validação de disponibilidade; a baixa ocorre somente após callback **APROVADO**.
-- **Segurança:** JWT stateless + `@PreAuthorize` por perfil (`ADMIN`, `GERENTE`, `ATENDENTE`, `COZINHA`, `CLIENTE`).
-- **LGPD:** registro de cliente exige `consentimentoLgpd` e persiste `dataConsentimentoLgpd`. Documentação completa em `docs/LGPD.md`.
-- **Auditoria:** login, pedidos, estoque, pagamentos e resgates relevantes são registrados; consulta em `GET /auditoria` (ADMIN).
-- **Multicanalidade:** pedidos exigem `canalPedido` (`APP`, `TOTEM`, `BALCAO`, `PICKUP`, `WEB`) e podem ser filtrados por `?canalPedido=`.
-- **Cancelamento:** `POST /pedidos/{id}/cancelar` — cliente cancela apenas em `AGUARDANDO_PAGAMENTO`; equipe (atendente/gerente/admin) também em `PAGO` e `EM_PREPARO`, com estorno de estoque e pontos quando aplicável.
-- **Desempenho:** virtual threads habilitadas (`spring.threads.virtual.enabled=true`) + script k6 em `scripts/k6-load-test.js`.
-- **Disponibilidade:** Spring Actuator com `/actuator/health`, liveness e readiness (MySQL).
-- **Tolerância a falhas (pagamento):** gateway mock desacoplado com retry e circuit breaker (Resilience4j); callback idempotente.
-
----
-
-## Estrutura do projeto
-
-```
-src/main/java/com/raizesdonordeste/
-├── api/
-│   ├── controller/     endpoints REST
-│   ├── dto/            contratos de entrada e saída
-│   └── exception/      erros padronizados (ErrorResponse)
-├── application/
-│   └── service/        casos de uso e orquestração
-├── domain/
-│   ├── model/          entidades JPA
-│   └── enums/          status, perfis, canais
-└── infrastructure/
-    ├── config/         Security, OpenAPI
-    ├── repository/     Spring Data JPA
-    └── security/       JWT, filtros, UserDetails
-```
-
----
-
-## Endpoints por módulo
+## Organização por recurso (API)
 
 | Módulo | Responsabilidade |
 |---|---|
@@ -199,16 +322,29 @@ src/main/java/com/raizesdonordeste/
 | `/unidades` | Consulta e manutenção de lojas |
 | `/produtos` | Cardápio e disponibilidade por unidade |
 | `/estoque` | Entrada, saída e consulta por unidade |
-| `/pedidos` | Criação, consulta filtrada, cancelamento e status |
+| `/pedidos` | Criação, consulta, cancelamento e status |
 | `/pagamentos` | Solicitação mock e callback |
 | `/fidelidade` | Saldo, histórico e resgate |
-| `/auditoria` | Histórico de ações sensíveis |
+| `/auditoria` | Histórico de ações sensíveis (ADMIN) |
+| `/actuator` | Health, liveness e readiness |
+
+Detalhamento completo: `docs/API_ENDPOINTS.md`
+
+---
+
+## Arquitetura (camadas)
+
+```
+src/main/java/com/raizesdonordeste/
+├── api/              → Controllers, DTOs, exceções HTTP
+├── application/      → Services (casos de uso)
+├── domain/           → Entidades JPA e enums
+└── infrastructure/   → Repositories, Security, config, integrações
+```
 
 ---
 
 ## Padrão de erro
-
-Respostas de falha seguem estrutura única:
 
 ```json
 {
@@ -222,37 +358,29 @@ Respostas de falha seguem estrutura única:
 
 ---
 
-## Testes
-
-```bash
-mvnw.cmd test
-```
-
-O projeto inclui teste de contexto Spring Boot. Os testes de integração dependem de MySQL acessível com as credenciais configuradas.
-
----
-
 ## Entregáveis complementares
 
 | Artefato | Arquivo |
 |---|---|
-| Coleção Postman | `raizes-postman-collection.json` |
+| Coleção Postman | `raizes-postman-collection.json` (fluxo principal + pasta **Erros**) |
+| DER (PlantUML) | `docs/der.puml` — exportar PNG/PDF para o TCC |
 | Plano de testes | `PLANO_DE_TESTES.md` |
+| Endpoints (checklist) | `docs/API_ENDPOINTS.md` |
+| LGPD | `docs/LGPD.md` |
+| RNFs | `docs/RNF_IMPLEMENTACAO.md` |
 | Promoções (conceitual) | `docs/PROMOCOES_CAMPANHAS.md` |
-| RNFs (desempenho/disponibilidade) | `docs/RNF_IMPLEMENTACAO.md` |
-| Documentação por endpoint (5.3) | `docs/API_ENDPOINTS.md` |
-| LGPD (dados, consentimento, controles) | `docs/LGPD.md` |
 | Teste de carga k6 | `scripts/k6-load-test.js` |
+| Variáveis de ambiente | `.env.example` |
 
 ---
 
-## Limitações atuais
+## Limitações conhecidas
 
-- Pagamento externo é **mock interno**, sem integração real com adquirente.
-- Não há paginação nas listagens (`page`/`limit`).
-- Migrations versionadas (Flyway/Liquibase) não foram adotadas; schema via Hibernate `update`.
-- Promoções e campanhas: documentação conceitual em `docs/PROMOCOES_CAMPANHAS.md` (sem implementação no MVP).
-- Alta disponibilidade multi-instância não configurada (deploy single-node).
+- Pagamento externo é **mock interno**.
+- Schema via Hibernate `update` (sem Flyway/Liquibase).
+- Sem seed automático; ADMIN inicial via SQL.
+- Sem paginação nas listagens (`page`/`limit`).
+- Promoções apenas documentadas (`docs/PROMOCOES_CAMPANHAS.md`).
 
 ---
 

@@ -1,0 +1,121 @@
+@startuml
+title Modelo de Dados - MySQL (Raízes do Nordeste)
+skinparam linetype ortho
+
+entity "usuarios" as USR {
+  * id : BIGINT <<PK>>
+  --
+  nome : VARCHAR
+  email : VARCHAR <<UK>>
+  senha_hash : VARCHAR
+  telefone : VARCHAR
+  role : ENUM(ADMIN,GERENTE,ATENDENTE,COZINHA,CLIENTE)
+  ativo : BOOLEAN
+  consentimento_lgpd : BOOLEAN
+  data_consentimento_lgpd : DATETIME
+}
+
+entity "unidades" as UND {
+  * id : BIGINT <<PK>>
+  --
+  nome : VARCHAR
+  endereco : VARCHAR
+  cidade : VARCHAR
+  estado : VARCHAR
+  ativa : BOOLEAN
+}
+
+entity "produtos" as PRD {
+  * id : BIGINT <<PK>>
+  --
+  nome : VARCHAR
+  descricao : VARCHAR
+  preco : DECIMAL(10,2)
+  ativo : BOOLEAN
+}
+
+entity "estoques" as EST {
+  * id : BIGINT <<PK>>
+  --
+  unidade_id : BIGINT <<FK>>
+  produto_id : BIGINT <<FK>>
+  quantidade : INT
+  ..
+  UK (unidade_id, produto_id)
+}
+
+entity "pedidos" as PED {
+  * id : BIGINT <<PK>>
+  --
+  cliente_id : BIGINT <<FK>>
+  unidade_id : BIGINT <<FK>>
+  canal_pedido : ENUM(APP,TOTEM,BALCAO,PICKUP,WEB)
+  status : ENUM(StatusPedido)
+  valor_total : DECIMAL(10,2)
+  pontos_resgatados : INT
+  data_criacao : DATETIME
+}
+
+entity "itens_pedido" as ITP {
+  * id : BIGINT <<PK>>
+  --
+  pedido_id : BIGINT <<FK>>
+  produto_id : BIGINT <<FK>>
+  quantidade : INT
+  preco_unitario : DECIMAL(10,2)
+  subtotal : DECIMAL(10,2)
+}
+
+entity "pagamentos" as PAG {
+  * id : BIGINT <<PK>>
+  --
+  pedido_id : BIGINT <<FK, UK>>
+  transaction_id : VARCHAR <<UK>>
+  status : ENUM(PENDENTE,APROVADO,NEGADO)
+  forma_pagamento : ENUM(MOCK)
+  data_criacao : DATETIME
+  data_atualizacao : DATETIME
+}
+
+entity "fidelidades" as FID {
+  * id : BIGINT <<PK>>
+  --
+  usuario_id : BIGINT <<FK, UK>>
+  saldo_pontos : INT
+}
+
+entity "movimentos_fidelidade" as MFI {
+  * id : BIGINT <<PK>>
+  --
+  fidelidade_id : BIGINT <<FK>>
+  tipo : ENUM(ACUMULO,RESGATE)
+  pontos : INT
+  descricao : VARCHAR
+  data_movimento : DATETIME
+}
+
+entity "auditorias" as AUD {
+  * id : BIGINT <<PK>>
+  --
+  usuario_email : VARCHAR
+  acao : VARCHAR
+  detalhes : TEXT
+  data_hora : DATETIME
+}
+
+USR ||--o{ PED : "cliente_id"
+UND ||--o{ PED : "unidade_id"
+UND ||--o{ EST : "unidade_id"
+PRD ||--o{ EST : "produto_id"
+PED ||--|{ ITP : "pedido_id"
+PRD ||--o{ ITP : "produto_id"
+PED ||--|| PAG : "pedido_id"
+USR ||--|| FID : "usuario_id"
+FID ||--o{ MFI : "fidelidade_id"
+
+note right of AUD
+  Referencia logica por e-mail
+  (sem FK formal para usuarios)
+end note
+
+@enduml

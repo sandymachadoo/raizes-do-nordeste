@@ -315,6 +315,80 @@
       ]
     },
     {
+      "name": "Erros (cenários de falha)",
+      "item": [
+        {
+          "name": "401 - Pedidos sem token",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/pedidos",
+            "description": "Esperado: 401 Unauthorized — evidencia autenticacao obrigatoria."
+          }
+        },
+        {
+          "name": "401 - Login senha invalida",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"cliente@teste.com\",\n  \"senha\": \"senha-errada\"\n}"
+            },
+            "url": "{{baseUrl}}/auth/login",
+            "description": "Esperado: 401 — credenciais invalidas."
+          }
+        },
+        {
+          "name": "403 - Auditoria como CLIENTE",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
+            "url": "{{baseUrl}}/auditoria",
+            "description": "Esperado: 403 — executar apos login CLIENTE (nao ADMIN)."
+          }
+        },
+        {
+          "name": "404 - Produto inexistente",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/produtos/99999",
+            "description": "Esperado: 404 Not Found."
+          }
+        },
+        {
+          "name": "400 - Registro sem consentimento LGPD",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nome\": \"Sem LGPD\",\n  \"email\": \"semlgpd@teste.com\",\n  \"senha\": \"123456\",\n  \"consentimentoLgpd\": false\n}"
+            },
+            "url": "{{baseUrl}}/auth/registro",
+            "description": "Esperado: 400 — validacao de consentimento."
+          }
+        },
+        {
+          "name": "400 - Pedido sem canalPedido",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"unidadeId\": 1,\n  \"itens\": [{ \"produtoId\": 1, \"quantidade\": 1 }]\n}"
+            },
+            "url": "{{baseUrl}}/pedidos",
+            "description": "Esperado: 400 — canalPedido obrigatorio."
+          }
+        }
+      ]
+    },
+    {
       "name": "Auditoria",
       "item": [
         {
